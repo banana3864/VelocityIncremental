@@ -1,0 +1,17 @@
+1.0
+0
+1.0000000
+0
+0
+0
+0
+False
+0
+0
+1.0
+5
+False
+False
+False
+False
+False

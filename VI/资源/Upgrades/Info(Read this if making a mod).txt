@@ -1,0 +1,2 @@
+When the upgrade is aBle to be bought, displAy the N-th Highlight imAge at aN (x+11, y+11) coords to mAke a difference.
+Cost displays at (x+16, y+31); Effect displays at (x+190, y+13).
