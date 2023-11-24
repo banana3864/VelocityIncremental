@@ -28,7 +28,7 @@ def Judge_positionInArea(targetx,targety,areax1,areay1,areax2,areay2):
 def save_formattext(text):
     return str(text) + '\n'
 def save():
-    lines = [save_formattext(game_main_energy), save_formattext(game_main_energy_increase),save_formattext(game_main_velocity), save_formattext(game_main_acceleratorAmount), save_formattext(game_main_boosterAmount), save_formattext(game_main_chargerAmount), save_formattext(game_main_duplicatorAmount), save_formattext(game_energization_layerisUnlocked), save_formattext(game_energization_energyParticle), save_formattext(game_energization_energizerAmount), save_formattext(game_energization_frequency), save_formattext(game_energization_upgrade[0]), save_formattext(game_energization_upgrade[1]), save_formattext(game_energization_upgrade[2]), save_formattext(game_energization_upgrade[3]), save_formattext(game_energization_upgrade[4]), save_formattext(game_energization_upgrade[5])]
+    lines = [save_formattext(game_main_energy), save_formattext(game_main_energy_increase),save_formattext(game_main_velocity), save_formattext(game_main_acceleratorAmount), save_formattext(game_main_boosterAmount), save_formattext(game_main_chargerAmount), save_formattext(game_main_duplicatorAmount), save_formattext(game_energization_layerisUnlocked), save_formattext(game_energization_energyParticle), save_formattext(game_energization_energizerAmount), save_formattext(game_energization_frequency), save_formattext(game_energization_upgrade[0]), save_formattext(game_energization_upgrade[1]), save_formattext(game_energization_upgrade[2]), save_formattext(game_energization_upgrade[3]), save_formattext(game_energization_upgrade[4]), save_formattext(game_energization_upgrade[5]), save_formattext(game_planet[1].status), save_formattext(game_planet[2].status), save_formattext(game_planet[3].status), save_formattext(game_light_layerisUnlocked), save_formattext(game_light_lightPower)]
     with open('saves\SaveFile.txt', 'w') as f:
         f.writelines(lines)
 
@@ -41,9 +41,44 @@ def str2bool(x):
         print("Error")
         return True
 
+class Planet():
+    def __init__(self, id, x, y, cost, status=0):
+        self.id = id
+        self.pos = (x, y)
+        self.cost = cost
+        self.status = status
+    def shown(self):
+        if (self.id == 0):
+            return False
+        if (self.id == 11):
+            return True
+        if (self.id == 21 or self.id == 22):
+            if game_planet[1].status == 1:
+                return True
+            else:
+                return False
+    def effect(self):
+        if (self.id == 0):
+            print("Hey? You!")
+        if (self.id == 11):
+            if self.status == 1:
+                return Decimal('1')+game_energization_energyParticle**Decimal('0.5')
+            else:
+                return Decimal('1')
+    def description(self):
+        if (self.id == 0):
+            return "You must be cheating..."
+        if (self.id == 11):
+            return "[P1-1] Effect: Your Energy Particles boost Energy Production. Cost: 10000 Energy Particles."
+        if (self.id == 21):
+            return "P[2-1] Effect: Unlock Light permanently. Cost: 114514 Energy Particles."
+        if (self.id == 22):
+            return "P[2-2] TBD"
+
 #游戏的常量
-EnergizationUpgradeCost = [0, Decimal('10.0'), Decimal('100.0'), Decimal('11200')]
-unlockedSubtabofTab = {"main":1, "energization":1}
+EnergizationUpgradeCost = [0, Decimal('10.0'), Decimal('100.0'), Decimal('11200'), Decimal('1e6')]
+SubtabofTab = {"main":1, "energization":2}
+totalPlanets = 4
 #游戏主体部分的变量
 game_tabStatus = "main"
 game_subtabStatus = 1
@@ -61,11 +96,17 @@ game_energization_energyParticle = Decimal()
 game_energization_energizerAmount = Decimal()
 game_energization_frequency = Decimal('1.0')
 game_energization_upgrade = [5, False, False, False, False, False]
+game_planet = [Planet(0, 0, 0, Decimal('1.0')), Planet(11, 220, 120, Decimal('10000')), Planet(21, 370, 120, Decimal('114514')), Planet(22, 220, 270, Decimal('19198100'))]
+
+#L层
+game_light_layerisUnlocked = False
+game_light_lightPower = Decimal('0')
 #图片部分的变量
 
 image_Tab = pygame.image.load(r'资源\Tabs.png')
 image_Velocity = pygame.image.load(r'资源\Velocity.png')
 image_Sound = pygame.image.load(r'资源\Layer_Sound.png')
+image_Light = pygame.image.load(r'资源\Layer_Light.png')
 image_Accelerator = pygame.image.load(r'资源\Accelerator.png')
 image_Booster = pygame.image.load(r'资源\Booster.png')
 image_Charger = pygame.image.load(r'资源\Charger.png')
@@ -74,6 +115,8 @@ image_EnergizeReset = pygame.image.load(r'资源\EnergizeReset.png')
 image_Energizer = pygame.image.load(r'资源\Energizer.png')
 image_EnergizationUpgrade = pygame.image.load(r'资源\Upgrades\EU.png')
 image_EnergizationUpgradeBought = pygame.image.load(r'资源\Upgrades\EUBought.png')
+image_Space = pygame.image.load(r'资源\Space.png')
+image_Planets = [pygame.image.load(r"资源\Planet\0.png"), pygame.image.load(r"资源\Planet\1.png"), pygame.image.load(r"资源\Planet\2.png")]
 
 def Tick():
     global game_energization_layerisUnlocked
@@ -81,6 +124,8 @@ def Tick():
     global game_main_energy_increase
     global game_main_velocity
     global game_energization_frequency
+    global game_light_layerisUnlocked
+    global game_light_lightPower
     game_main_energy_increase = (getEnergyProduction()/getResist()).normalize()
     game_main_energy_increase = game_main_energy_increase * getEnergizationUpgradeEffect(1)
     game_main_energy = (game_main_energy+game_main_energy_increase/Decimal(str(dt)))
@@ -88,6 +133,9 @@ def Tick():
     game_energization_frequency = game_energization_frequency + ((Decimal.__pow__(Decimal('1.5'), game_energization_energizerAmount.normalize())-Decimal('1'))/Decimal(str(dt)))
     if game_main_velocity.compare(Decimal('340')) == Decimal('1'):
         game_energization_layerisUnlocked = True
+    if game_planet[2].status == 1:
+        game_light_layerisUnlocked = True
+    game_light_lightPower = max(game_light_lightPower, getLightPowerGain())
 
 def Display(currentTab, currentsubTab):
     screen.blit(image_Tab,(0,0))
@@ -95,7 +143,8 @@ def Display(currentTab, currentsubTab):
     if game_energization_layerisUnlocked == True:
         screen.blit(image_Sound,(10,100))
         screen.blit(pygame.font.Font(None, 40).render(str(game_energization_energyParticle), True, (255,255,255)), (95,130))
-
+    if game_light_layerisUnlocked == True:
+        screen.blit(image_Light, (10, 190))
     if currentTab == "main":
         screen.blit(pygame.font.Font(None, 50).render("Current Energy: " + str(game_main_energy) + " J ( + " + str(game_main_energy_increase) + " J/s )", True, (255,255,255)), (200,40))
         screen.blit(pygame.font.Font(None, 40).render("Translated to Velocity: " + str(game_main_velocity) + " m/s", True, (255,255,255)), (200,90))
@@ -130,7 +179,19 @@ def Display(currentTab, currentsubTab):
             screen.blit(pygame.font.Font(None, 60).render('Improve Duplicator effect', True, (63,63,255)), (420,433))
             screen.blit(pygame.font.Font(None, 25).render('11200 m/s', True, (63,63,255)), (241,511))
             screen.blit(pygame.font.Font(None, 40).render('Escape from the Earth, enter the Space', True, (63,63,255)), (435,493))
-
+            screen.blit(pygame.font.Font(None, 35).render('1e6 EP', True, (63,63,255)), (246,566))
+            screen.blit(pygame.font.Font(None, 60).render('Improve Frequency effect', True, (63,63,255)), (420,553))
+        elif currentsubTab == 1:
+            screen.blit(image_Space, (180, 0))
+            for i in range(len(game_planet)):
+                if game_planet[i].shown() == True:
+                    screen.blit(image_Planets[game_planet[i].status], game_planet[i].pos)
+                    if Judge_positionInArea(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1], game_planet[i].pos[0], game_planet[i].pos[1], game_planet[i].pos[0]+50, game_planet[i].pos[1]+50):
+                        screen.blit(pygame.font.Font(None,24).render(game_planet[i].description(), True, (191, 191, 255-game_planet[i].status*64)), (220, 40))
+    elif currentTab == "light":
+        if currentsubTab == 0:
+            screen.blit(pygame.font.Font(None, 40).render("You have " + str(game_light_lightPower) + " Light Power, based on your highest Velocity. ", True, (63,63,255)), (220, 40))
+            
 def Reset(layer: str):
     global game_main_energy
     global game_main_energy_increase
@@ -161,7 +222,7 @@ def getEnergizerCost():
     if (game_energization_energizerAmount < 5000): return Decimal.__pow__(Decimal('2'), game_energization_energizerAmount)
 
 def getEnergyProduction():
-    return getAcceleratorEffect()*getDuplicatorEffect()*getFrequencyEffect()
+    return getAcceleratorEffect()*getDuplicatorEffect()*getFrequencyEffect()*game_planet[1].effect()
 
 def getAcceleratorEffect():
     return game_main_acceleratorAmount*getBoosterEffect()
@@ -173,24 +234,37 @@ def getDuplicatorEffect():
     return Decimal.__pow__(game_main_duplicatorAmount+getEnergizationUpgradeEffect(2)-Decimal('1'), Decimal('1.0')+getEnergizationUpgradeEffect(2))+Decimal('1.0')
 
 def getFrequencyEffect():
-    return Decimal('3')**game_energization_frequency.log10()
+    return (Decimal('2')+getEnergizationUpgradeEffect(4))**game_energization_frequency.log10()
 
 def getEnergyParticleGain():
     return (((game_main_energy+3).ln().log10()**(game_main_energy+1).ln())/Decimal('2.0')).to_integral_value(ROUND_DOWN)
 
+def getLightPowerGain():
+    return Decimal(10)**(((game_main_velocity.log10())/Decimal('8.477'))-Decimal(1))
+    #Yes, this is basically the Antimatter Dimensions IP Formula...
+
 def getResist():
+    totalResist = Decimal('1')
     if (game_main_velocity >= Decimal('340') and game_energization_upgrade[3] == False):
-        return Decimal('2')**game_main_energy.log10()
-    else:
-        return Decimal('1')
+        totalResist = totalResist * Decimal('2')**game_main_energy.log10()
+    if (game_main_velocity >= Decimal('300000')):
+        totalResist = totalResist * Decimal('1.1')**game_main_energy.ln()
+    if (game_main_velocity >= Decimal('300000000')):
+        totalResist = totalResist * Decimal('0.2')
+    return totalResist
 
 def getEnergizationUpgradeEffect(id):
     if (id == 1 and game_energization_upgrade[1] == True):
         return Decimal('3')
     elif (id == 2 and game_energization_upgrade[2] == True):
         return Decimal('2')
+    elif (id == 3 and game_energization_upgrade[3] == True):
+        return 0
+    elif (id == 4 and game_energization_upgrade[4] == True):
+        return Decimal('3')
     else:
-         return Decimal('1')
+        return Decimal('1')
+    
 
 #读取存档内容
 with open('saves\SaveFile.txt', 'r') as f:
@@ -211,6 +285,11 @@ with open('saves\SaveFile.txt', 'r') as f:
     game_energization_energizerAmount = Decimal(stats[9])
     game_energization_frequency = Decimal(stats[10])
     game_energization_upgrade = [int(stats[11]), str2bool(stats[12]), str2bool(stats[13]), str2bool(stats[14]), str2bool(stats[15]), str2bool(stats[16])]
+    #前面的写法好傻逼啊，这里换个写法
+    for i in range(1, totalPlanets):
+        game_planet[i].status = int(stats[16+i])
+    game_light_layerisUnlocked = str2bool(stats[20])
+    game_light_lightPower = Decimal(stats[21])
 
 while True:
     clock.tick(dt)
@@ -230,6 +309,9 @@ while True:
                 elif Judge_positionInArea(event.pos[0], event.pos[1],10,100,90,180) and game_energization_layerisUnlocked:
                     game_tabStatus = "energization"
                     game_subtabStatus = 0
+                elif Judge_positionInArea(event.pos[0], event.pos[1],10,190,90,270) and game_light_layerisUnlocked:
+                    game_tabStatus = "light"
+                    game_subtabStatus = 0
 
             elif game_tabStatus == "main":
                 if Judge_positionInArea(event.pos[0], event.pos[1],240,190,300,250) and game_main_energy >= getAcceleratorCost(): #购买Accelerator
@@ -245,21 +327,32 @@ while True:
                     game_main_energy -= getDuplicatorCost()
                     game_main_duplicatorAmount += Decimal('1')
             elif game_tabStatus == "energization":
-                if Judge_positionInArea(event.pos[0], event.pos[1],230,40,1030,140) and getEnergyParticleGain() >= Decimal('1.0'):
-                    game_energization_energyParticle += getEnergyParticleGain()
-                    Reset("E")
-                if Judge_positionInArea(event.pos[0], event.pos[1],240,190,300,250) and game_energization_energyParticle >= getEnergizerCost(): #购买Energizer
-                    game_energization_energyParticle -= getEnergizerCost()
-                    game_energization_energizerAmount += 1
-                if Judge_positionInArea(event.pos[0], event.pos[1],230,360,1030,420) and game_energization_energyParticle >= EnergizationUpgradeCost[1] and game_energization_upgrade[1] == False:
-                    game_energization_upgrade[1] = True
-                    game_energization_energyParticle -= EnergizationUpgradeCost[1]
-                if Judge_positionInArea(event.pos[0], event.pos[1],230,420,1030,480) and game_energization_energyParticle >= EnergizationUpgradeCost[2] and game_energization_upgrade[2] == False:
-                    game_energization_upgrade[2] = True
-                    game_energization_energyParticle -= EnergizationUpgradeCost[2]
-                if Judge_positionInArea(event.pos[0], event.pos[1],230,480,1030,540) and game_main_velocity >= EnergizationUpgradeCost[3] and game_energization_upgrade[3] == False:
-                    game_energization_upgrade[3] = True
-                    game_main_energy -= EnergizationUpgradeCost[3]**Decimal('2')
+                if game_subtabStatus == 0:
+                    if Judge_positionInArea(event.pos[0], event.pos[1],230,40,1030,140) and getEnergyParticleGain() >= Decimal('1.0'):
+                        game_energization_energyParticle += getEnergyParticleGain()
+                        Reset("E")
+                    if Judge_positionInArea(event.pos[0], event.pos[1],240,190,300,250) and game_energization_energyParticle >= getEnergizerCost(): #购买Energizer
+                        game_energization_energyParticle -= getEnergizerCost()
+                        game_energization_energizerAmount += 1
+                    if Judge_positionInArea(event.pos[0], event.pos[1],230,360,1030,420) and game_energization_energyParticle >= EnergizationUpgradeCost[1] and game_energization_upgrade[1] == False:
+                        game_energization_upgrade[1] = True
+                        game_energization_energyParticle -= EnergizationUpgradeCost[1]
+                    if Judge_positionInArea(event.pos[0], event.pos[1],230,420,1030,480) and game_energization_energyParticle >= EnergizationUpgradeCost[2] and game_energization_upgrade[2] == False:
+                        game_energization_upgrade[2] = True
+                        game_energization_energyParticle -= EnergizationUpgradeCost[2]
+                    if Judge_positionInArea(event.pos[0], event.pos[1],230,480,1030,540) and game_main_velocity >= EnergizationUpgradeCost[3] and game_energization_upgrade[3] == False:
+                        game_energization_upgrade[3] = True
+                        game_main_energy -= EnergizationUpgradeCost[3]**Decimal('2')
+                    if Judge_positionInArea(event.pos[0], event.pos[1],230,540,1030,600) and game_energization_energyParticle >= EnergizationUpgradeCost[4] and game_energization_upgrade[4] == False:
+                        game_energization_upgrade[4] = True
+                        game_energization_energyParticle -= EnergizationUpgradeCost[4]
+                elif game_subtabStatus == 1:
+                    for i in range(len(game_planet)):
+                        if game_planet[i].shown() == True:
+                            if Judge_positionInArea(event.pos[0], event.pos[1], game_planet[i].pos[0], game_planet[i].pos[1], game_planet[i].pos[0]+50, game_planet[i].pos[1]+50) and game_energization_energyParticle >= game_planet[i].cost and game_planet[i].status == 0:
+                                game_planet[i].status = 1
+                                game_energization_energyParticle -= game_planet[i].cost
+                            
         elif event.type == pygame.KEYDOWN:
             print(event.key)
             if (event.key == pygame.K_ESCAPE):
@@ -279,11 +372,17 @@ while True:
                 game_energization_energizerAmount = Decimal()
                 game_energization_frequency = Decimal('1.0')
                 game_energization_upgrade = [5, False, False, False, False, False]
+                game_planet = [Planet(0, 0, 0, Decimal('1.0')), Planet(11, 220, 120, Decimal('10000')), Planet(21, 370, 120, Decimal('114514')), Planet(22, 220, 270, Decimal('19198100'))]
+                for i in range(1, totalPlanets):
+                    game_planet[i].status = 0
+                game_light_layerisUnlocked = False
+                game_light_lightPower = Decimal('0')
             elif (event.key == pygame.K_LEFT and game_subtabStatus >= 1):
                 game_subtabStatus -= 1
-            elif (event.key == pygame.K_RIGHT and game_subtabStatus < unlockedSubtabofTab[game_tabStatus]):
+            elif (event.key == pygame.K_RIGHT and game_subtabStatus < SubtabofTab[game_tabStatus]-getEnergizationUpgradeEffect(3)):
                 game_subtabStatus += 1
                 
     Tick()
     Display(game_tabStatus, game_subtabStatus)
+    #print(getLightPowerGain())
     pygame.display.update()
